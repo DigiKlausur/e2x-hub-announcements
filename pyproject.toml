@@ -1,0 +1,97 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "e2x-hub-announcements"
+dynamic = ["version"]
+description = "A JupyterHub service for page-targeted, severity-styled announcements with expiry, rendered by the hub without restarts."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+keywords = []
+authors = [
+  { name = "Tim Metzler", email = "tim.metzler@h-brs.de" },
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+]
+dependencies = [
+  "pydantic>=2.0",
+  "pydantic-settings>=2.0",
+  "jinja2>=3.1",
+  "fastapi>=0.100.0",
+  "uvicorn>=0.23",
+  "jupyterhub-fastapi-adapter>=0.1.0",
+  "nh3>=0.2",
+]
+
+[project.urls]
+Documentation = "https://github.com/Digiklausur/e2x-hub-announcements#readme"
+Issues = "https://github.com/Digiklausur/e2x-hub-announcements/issues"
+Source = "https://github.com/Digiklausur/e2x-hub-announcements"
+
+[project.optional-dependencies]
+dev = [
+  "pre-commit",
+  # Pinned to the same version as e2x-course-hub so all e2x packages format identically.
+  "ruff==0.16.7",
+  "tbump",
+  "build",
+  "twine",
+]
+test = [
+  "pytest",
+  "pytest-cov",
+  # Needed by FastAPI's TestClient.
+  "httpx",
+]
+
+[tool.hatch.version]
+path = "e2x_hub_announcements/__about__.py"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.tbump]
+github_url = "https://github.com/Digiklausur/e2x-hub-announcements"
+
+[tool.tbump.version]
+current = "0.1.0-rc0"
+# Release candidates are written "0.1.0-rc0"; Python packaging normalises it to "0.1.0rc0".
+regex = '''
+  (?P<major>\d+)
+  \.
+  (?P<minor>\d+)
+  \.
+  (?P<patch>\d+)
+  (-(?P<rc>rc\d+))?
+  '''
+
+[tool.tbump.git]
+message_template = "Bump to {new_version}"
+tag_template = "v{new_version}"
+
+# Files with the version to update
+[[tool.tbump.file]]
+src = "e2x_hub_announcements/__about__.py"
+
+[[tool.tbump.before_commit]]
+name = "Build"
+cmd = "python -m build"
+
+[[tool.tbump.before_commit]]
+name = "Check with twine"
+cmd = "twine check dist/*"
+
+[tool.ruff]
+line-length = 100
+lint.select = ["F", "E", "I"]
+# Ruff lints Python blocks inside Markdown by default; the ones in our docs are
+# illustrative and often partial, so keep Ruff to real Python sources.
+extend-exclude = ["*.md"]
