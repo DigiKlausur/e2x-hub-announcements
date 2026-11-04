@@ -64,7 +64,7 @@ testpaths = ["tests"]
 github_url = "https://github.com/Digiklausur/e2x-hub-announcements"
 
 [tool.tbump.version]
-current = "0.0.0"
+current = "0.1.0-rc0"
 # Release candidates are written "0.1.0-rc0"; Python packaging normalises it to "0.1.0rc0".
 regex = '''
   (?P<major>\d+)
