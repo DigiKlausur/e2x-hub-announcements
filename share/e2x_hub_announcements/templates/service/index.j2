@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Announcements</title>
+  {# The hub's own stylesheet (includes Bootstrap), so the preview matches hub pages. #}
+  <link rel="stylesheet" href="{{ hub_css_url }}">
+</head>
+<body>
+<main class="container my-4">
+  <h1 class="h3 mb-4">Announcements</h1>
+
+  <form id="form" class="card card-body mb-4">
+    <div class="mb-3">
+      <label for="message" class="form-label">Message</label>
+      <textarea id="message" class="form-control font-monospace" rows="3" required></textarea>
+      <div class="form-text">
+        Allowed HTML:
+        {% for tag in allowed_tags %}<code>&lt;{{ tag }}&gt;</code> {% endfor %}
+      </div>
+    </div>
+
+    <fieldset class="mb-3">
+      <legend class="form-label fs-6">Show on</legend>
+      {% for page in pages %}
+      <div class="form-check form-check-inline">
+        <input class="form-check-input" type="checkbox" name="pages" value="{{ page }}"
+               id="page-{{ page }}" checked>
+        <label class="form-check-label" for="page-{{ page }}">{{ page }}</label>
+      </div>
+      {% endfor %}
+    </fieldset>
+
+    <div class="row g-3 mb-3">
+      <div class="col-sm-6">
+        <label for="severity" class="form-label">Severity</label>
+        <select id="severity" class="form-select">
+          {% for severity in severities %}
+          <option value="{{ severity }}" {% if severity == "warning" %}selected{% endif %}>
+            {{ severity }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-sm-6">
+        <label for="expires" class="form-label">Expires (your local time)</label>
+        <input id="expires" type="datetime-local" class="form-control" required>
+      </div>
+    </div>
+
+    <div id="error" class="alert alert-danger d-none" role="alert"></div>
+
+    <div class="d-flex gap-2">
+      <button type="button" id="preview-button" class="btn btn-outline-secondary">Preview</button>
+      <button type="submit" class="btn btn-primary">Publish</button>
+    </div>
+  </form>
+
+  <section id="preview-section" class="mb-4 d-none">
+    <h2 class="h5">Preview</h2>
+    <div id="preview"></div>
+  </section>
+
+  <h2 class="h5">All announcements</h2>
+  <div class="table-responsive">
+    <table class="table align-middle">
+      <thead>
+        <tr>
+          <th>Message</th><th>Pages</th><th>Severity</th><th>Expires</th><th>Created</th><th></th>
+        </tr>
+      </thead>
+      <tbody id="list"></tbody>
+    </table>
+  </div>
+</main>
+
+<script>
+const API = {{ api_url | tojson }};
+
+const form = document.getElementById("form");
+const errorBox = document.getElementById("error");
+const previewSection = document.getElementById("preview-section");
+const preview = document.getElementById("preview");
+const list = document.getElementById("list");
+
+// ── API ───────────────────────────────────────────────────────────────
+async function api(method, path, body) {
+  const response = await fetch(API + path, {
+    method,
+    headers: body ? { "Content-Type": "application/json" } : {},
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  if (response.status === 204) return null;
+  let data;
+  try {
+    data = await response.json();
+  } catch {
+    // e.g. the login expired and the hub answered with a non-JSON page
+    throw new Error("Unexpected response from the server. Reload the page to log in again.");
+  }
+  if (!response.ok) throw new Error(describeError(data.detail));
+  return data;
+}
+
+function describeError(detail) {
+  // FastAPI sends a string for HTTPException and a list of field errors for validation.
+  if (Array.isArray(detail)) return detail.map((d) => `${d.loc.at(-1)}: ${d.msg}`).join("; ");
+  return detail || "Request failed";
+}
+
+// ── Form ──────────────────────────────────────────────────────────────
+function formData() {
+  const expires = document.getElementById("expires").value;
+  return {
+    message: document.getElementById("message").value,
+    pages: [...form.querySelectorAll('input[name="pages"]:checked')].map((el) => el.value),
+    severity: document.getElementById("severity").value,
+    // datetime-local has no time zone; the browser reads it as local time, we send UTC.
+    expires_at: expires ? new Date(expires).toISOString() : null,
+  };
+}
+
+function toLocalInputValue(date) {
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return local.toISOString().slice(0, 16);
+}
+
+function showError(error) {
+  errorBox.textContent = error ? error.message : "";
+  errorBox.classList.toggle("d-none", !error);
+}
+
+document.getElementById("preview-button").addEventListener("click", async () => {
+  try {
+    const { html } = await api("POST", "/preview", formData());
+    preview.innerHTML = html; // rendered from the sanitized message
+    previewSection.classList.remove("d-none");
+    showError(null);
+  } catch (error) {
+    showError(error);
+  }
+});
+
+form.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  try {
+    await api("POST", "/announcements", formData());
+    document.getElementById("message").value = "";
+    previewSection.classList.add("d-none");
+    showError(null);
+    await loadList();
+  } catch (error) {
+    showError(error);
+  }
+});
+
+// ── List ──────────────────────────────────────────────────────────────
+function formatTime(iso) {
+  return new Date(iso).toLocaleString();
+}
+
+function textCell(text) {
+  const td = document.createElement("td");
+  td.textContent = text;
+  return td;
+}
+
+function button(label, style, onClick) {
+  const el = document.createElement("button");
+  el.type = "button";
+  el.className = `btn btn-sm ${style} ms-1`;
+  el.textContent = label;
+  el.addEventListener("click", async () => {
+    try {
+      await onClick();
+      showError(null);
+      await loadList();
+    } catch (error) {
+      showError(error);
+    }
+  });
+  return el;
+}
+
+function row(announcement) {
+  const active = new Date(announcement.expires_at) > new Date();
+  const tr = document.createElement("tr");
+  if (!active) tr.classList.add("text-body-secondary");
+
+  const message = document.createElement("td");
+  message.innerHTML = announcement.message; // sanitized on write
+
+  const expires = textCell(formatTime(announcement.expires_at) + (active ? "" : " (expired)"));
+  const created = textCell(`${formatTime(announcement.created_at)} by ${announcement.created_by}`);
+
+  const actions = document.createElement("td");
+  actions.className = "text-end text-nowrap";
+  const path = `/announcements/${encodeURIComponent(announcement.id)}`;
+  if (active) {
+    actions.append(button("End now", "btn-outline-warning", () => api("POST", `${path}/end`)));
+  }
+  actions.append(
+    button("Delete", "btn-outline-danger", async () => {
+      if (confirm("Delete this announcement permanently?")) await api("DELETE", path);
+    }),
+  );
+
+  tr.append(
+    message,
+    textCell(announcement.pages.join(", ")),
+    textCell(announcement.severity),
+    expires,
+    created,
+    actions,
+  );
+  return tr;
+}
+
+async function loadList() {
+  const announcements = await api("GET", "/announcements");
+  list.replaceChildren(...announcements.map(row));
+}
+
+// ── Start ─────────────────────────────────────────────────────────────
+document.getElementById("expires").value = toLocalInputValue(new Date(Date.now() + 86400000));
+loadList().catch(showError);
+</script>
+</body>
+</html>

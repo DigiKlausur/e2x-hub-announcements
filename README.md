@@ -79,6 +79,7 @@ All paths are relative to the service prefix (e.g. `/services/announcements`). E
 
 | Method | Path                               | Purpose                                         |
 | ------ | ---------------------------------- | ----------------------------------------------- |
+| GET    | `/`                                | Admin UI: create, preview, end and delete announcements |
 | GET    | `/api/announcements`               | List all announcements (active and expired), newest first |
 | POST   | `/api/announcements`               | Create an announcement (`expires_at` must be in the future, with a timezone) |
 | POST   | `/api/announcements/{id}/end`      | Expire an announcement now                      |

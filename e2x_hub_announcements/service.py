@@ -8,6 +8,8 @@ from datetime import UTC, datetime
 from typing import Annotated
 
 from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi.responses import HTMLResponse
+from jinja2 import Environment, FileSystemLoader
 from jupyterhub.utils import url_path_join
 from jupyterhub_fastapi_adapter import (
     AuthenticationRequired,
@@ -20,7 +22,8 @@ from pydantic import BaseModel
 
 from . import store
 from .__about__ import __version__
-from .models import Announcement, AnnouncementCreate
+from ._data import SERVICE_TEMPLATE_PATH
+from .models import ALLOWED_TAGS, Announcement, AnnouncementCreate, Page, Severity
 from .render import render_banner
 from .settings import ServiceSettings
 
@@ -30,6 +33,9 @@ service_prefix = settings.service_prefix.rstrip("/")
 api_prefix = f"{service_prefix}/api"
 
 CurrentUser = Annotated[User, Depends(require_authenticated_user)]
+
+# ── Jinja2 environment for the admin UI ──────────────────────────────
+jinja_env = Environment(loader=FileSystemLoader(SERVICE_TEMPLATE_PATH), autoescape=True)
 
 # ── FastAPI application ──────────────────────────────────────────────
 app = FastAPI(
@@ -105,3 +111,17 @@ async def delete_announcement(announcement_id: str, user: CurrentUser) -> None:
 async def preview(data: AnnouncementCreate, user: CurrentUser) -> Preview:
     """Render the banner exactly as the hub will, without saving it."""
     return Preview(html=render_banner(data))
+
+
+# ── Admin UI ─────────────────────────────────────────────────────────
+@app.get(f"{service_prefix}/", include_in_schema=False, response_class=HTMLResponse)
+async def admin_ui(user: CurrentUser) -> HTMLResponse:
+    """The admin page: form, preview and list, talking to the API above."""
+    html = jinja_env.get_template("index.j2").render(
+        api_url=api_prefix,
+        hub_css_url=url_path_join(settings.hub_base_url, "hub/static/css/style.min.css"),
+        pages=list(Page),
+        severities=list(Severity),
+        allowed_tags=sorted(ALLOWED_TAGS),
+    )
+    return HTMLResponse(content=html)

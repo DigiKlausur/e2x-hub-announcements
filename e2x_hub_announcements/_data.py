@@ -26,3 +26,4 @@ def get_data_files():
 # Package managers can just override this with the appropriate constant
 DATA_FILES_PATH = get_data_files()
 JUPYTERHUB_TEMPLATE_PATH = os.path.join(DATA_FILES_PATH, "templates", "jupyterhub")
+SERVICE_TEMPLATE_PATH = os.path.join(DATA_FILES_PATH, "templates", "service")

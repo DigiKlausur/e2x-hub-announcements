@@ -97,3 +97,14 @@ def test_preview_matches_hub_render_and_does_not_save(client):
     assert response.status_code == 200
     assert response.json()["html"] == render_banner(AnnouncementCreate(**data))
     assert client.get(f"{API}/announcements").json() == []
+
+
+def test_admin_ui_renders(client):
+    response = client.get("/services/announcements/")
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/html")
+    html = response.text
+    assert f'const API = "{API}";' in html
+    assert 'href="/hub/static/css/style.min.css"' in html
+    for page in ("spawn", "login", "home", "logout"):
+        assert f'id="page-{page}"' in html
