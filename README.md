@@ -5,8 +5,6 @@
 
 `e2x-hub-announcements` is a small announcement service for [JupyterHub](https://jupyterhub.readthedocs.io/) (z2jh) deployments. Admins write an announcement in a web UI and choose which hub pages it appears on, its severity, and when it expires. It shows up on the next page load, with no hub restart.
 
-It has no dependency on `e2x-course-hub`, so it can run on any hub.
-
 ```text
  admin browser ──► /services/announcements/  (FastAPI service, managed by hub)
                          │ writes
@@ -19,8 +17,6 @@ It has no dependency on `e2x-course-hub`, so it can run on any hub.
 
 The hub renders the banner itself through JupyterHub's stock `announcement_<page>` template variables. Banners need no JavaScript or polling, and spawner templates need no changes.
 
-See [announcements.md](announcements.md) for the full design.
-
 > **Status:** early development (`0.1.0-rc0`). The sections below describe the planned interface.
 
 ---
@@ -29,6 +25,7 @@ See [announcements.md](announcements.md) for the full design.
 
 * **Admin service** (`e2x_hub_announcements.service`): a FastAPI app with an admin UI and API. Admins create announcements with target pages (spawn, login, home, logout), a severity (`info`, `warning`, `alert`) and an expiry, preview them, and end them early.
 * **Hub integration** (`e2x_hub_announcements.hub`): `configure_announcements(c, store_path=...)` registers `template_vars` callables that read the store on each page render and return the active banners for that page.
+* **`page.html` override** (`share/e2x_hub_announcements/templates/jupyterhub/`): replaces only the stock `announcement` block, so banners render in their severity colour instead of the stock yellow warning box.
 
 ---
 
@@ -65,6 +62,14 @@ hub:
 ```
 
 Like other managed services, it also needs a `hub.service.extraPorts` entry and a `hub.networkPolicy.ingress` rule for `<port>`. Give `access:services!service=announcements` to admins only, not to the default `user` role.
+
+### Severity styling and `template_paths`
+
+The stock `page.html` wraps every announcement in a yellow `alert-warning` box. To show the severity colour instead, `configure_announcements` puts this package's `page.html` override **first** in `c.JupyterHub.template_paths`. Every hub page that extends `page.html` picks it up, including custom templates that extend `templates/spawn.html`.
+
+* **Add to `template_paths`, don't assign it.** Other config that runs after `configure_announcements` must use `c.JupyterHub.template_paths.append(...)` (or `+=`). An assignment like `c.JupyterHub.template_paths = [...]` silently removes the override. Banners then still show, but always in the yellow box.
+* **Only one `page.html` override can apply.** The override extends the stock `templates/page.html` directly, so it shadows any other `page.html` in `template_paths` (e.g. a theme).
+* Templates that extend `templates/page.html` directly (with the prefix) bypass the override.
 
 ---
 

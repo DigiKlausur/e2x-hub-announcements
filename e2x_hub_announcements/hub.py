@@ -10,6 +10,7 @@ import logging
 from collections.abc import Callable
 
 from . import store
+from ._data import JUPYTERHUB_TEMPLATE_PATH
 from .models import Page
 from .render import render_page
 
@@ -41,7 +42,12 @@ def configure_announcements(c, store_path: str = DEFAULT_STORE_PATH) -> None:
     """Register ``announcement_<page>`` template variables for every page.
 
     Uses ``update`` so existing ``template_vars`` (e.g. ``username_label``) are kept.
+
+    Also puts the package's ``page.html`` override first in ``template_paths`` so
+    banners render with their severity colour. Config that runs later must add to
+    ``template_paths`` (``append`` / ``+=``), not assign it, or the override is lost.
     """
     c.JupyterHub.template_vars.update(
         {f"announcement_{page}": _announcement_for(page, store_path) for page in Page}
     )
+    c.JupyterHub.template_paths.insert(0, JUPYTERHUB_TEMPLATE_PATH)

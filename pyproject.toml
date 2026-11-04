@@ -54,6 +54,9 @@ test = [
 [tool.hatch.version]
 path = "e2x_hub_announcements/__about__.py"
 
+[tool.hatch.build.targets.wheel.shared-data]
+"share/e2x_hub_announcements" = "share/e2x_hub_announcements"
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 

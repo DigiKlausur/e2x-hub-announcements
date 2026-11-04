@@ -1,0 +1,12 @@
+{#- Overrides only the announcement block of the stock page.html.
+    e2x-hub-announcements pre-renders each banner with its own severity class,
+    so it is output as-is instead of inside the stock alert-warning wrapper.
+    Extends "templates/page.html" (the stock file); plain "page.html" would
+    resolve to this file again. -#}
+{% extends "templates/page.html" %}
+
+{% block announcement %}
+  {% if announcement %}
+    {{ announcement | safe }}
+  {% endif %}
+{% endblock announcement %}
