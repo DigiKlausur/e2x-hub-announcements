@@ -73,6 +73,20 @@ The stock `page.html` wraps every announcement in a yellow `alert-warning` box. 
 
 ---
 
+## API
+
+All paths are relative to the service prefix (e.g. `/services/announcements`). Every endpoint requires `access:services!service=announcements`. Interactive docs are at `<prefix>/docs`.
+
+| Method | Path                               | Purpose                                         |
+| ------ | ---------------------------------- | ----------------------------------------------- |
+| GET    | `/api/announcements`               | List all announcements (active and expired), newest first |
+| POST   | `/api/announcements`               | Create an announcement (`expires_at` must be in the future, with a timezone) |
+| POST   | `/api/announcements/{id}/end`      | Expire an announcement now                      |
+| DELETE | `/api/announcements/{id}`          | Remove an announcement                          |
+| POST   | `/api/preview`                     | Render the banner HTML without saving           |
+
+---
+
 ## Development
 
 ```bash

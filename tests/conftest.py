@@ -1,8 +1,15 @@
+import os
 from datetime import UTC, datetime, timedelta
 
 import pytest
 
 from e2x_hub_announcements.models import Announcement
+
+# jupyterhub_fastapi_adapter reads these when it is imported, so they must be set
+# before any test imports e2x_hub_announcements.service.
+os.environ.setdefault("JUPYTERHUB_API_URL", "http://hub.invalid/hub/api")
+os.environ.setdefault("JUPYTERHUB_API_TOKEN", "test-token")
+os.environ.setdefault("JUPYTERHUB_SERVICE_PREFIX", "/services/announcements/")
 
 
 @pytest.fixture
