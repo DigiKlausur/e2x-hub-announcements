@@ -1,5 +1,6 @@
 # e2x-hub-announcements
 
+[![PyPI](https://img.shields.io/pypi/v/e2x-hub-announcements?include_prereleases)](https://pypi.org/project/e2x-hub-announcements/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python Version](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
 
@@ -17,7 +18,7 @@
 
 The hub renders the banner itself through JupyterHub's stock `announcement_<page>` template variables. Banners need no JavaScript or polling, and spawner templates need no changes.
 
-> **Status:** early development (`0.1.0-rc0`). The sections below describe the planned interface.
+> **Status:** pre-release (`0.1.0rc0`). The features below work, but the interface may still change before `0.1.0`. Please report problems in the [issue tracker](https://github.com/Digiklausur/e2x-hub-announcements/issues).
 
 ---
 
@@ -31,12 +32,10 @@ The hub renders the banner itself through JupyterHub's stock `announcement_<page
 
 ## Installation
 
-This package is not yet published. Install it from source into the hub image:
+Install the package into the hub image:
 
 ```bash
-git clone https://github.com/Digiklausur/e2x-hub-announcements.git
-cd e2x-hub-announcements
-pip install -e .
+pip install e2x-hub-announcements
 ```
 
 ---
