@@ -1,14 +1,11 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Announcements</title>
-  {# The hub's own stylesheet (includes Bootstrap), so the preview matches hub pages. #}
-  <link rel="stylesheet" href="{{ hub_css_url }}">
-</head>
-<body>
-<main class="container my-4">
+{#- Extends JupyterHub's stock page.html for the hub navbar and styles.
+    The variables it needs come from e2x_hub_announcements.hub_page. -#}
+{% extends "page.html" %}
+
+{% block title %}Announcements{% endblock title %}
+
+{% block main %}
+<div class="container">
   <h1 class="h3 mb-4">Announcements</h1>
 
   <form id="form" class="card card-body mb-4">
@@ -37,7 +34,7 @@
         <label for="severity" class="form-label">Severity</label>
         <select id="severity" class="form-select">
           {% for severity in severities %}
-          <option value="{{ severity }}" {% if severity == "warning" %}selected{% endif %}>
+          <option value="{{ severity }}" {% if severity == "info" %}selected{% endif %}>
             {{ severity }}
           </option>
           {% endfor %}
@@ -73,8 +70,11 @@
       <tbody id="list"></tbody>
     </table>
   </div>
-</main>
+</div>
+{% endblock main %}
 
+{% block script %}
+{{ super() }}
 <script>
 const API = {{ api_url | tojson }};
 
@@ -226,5 +226,4 @@ async function loadList() {
 document.getElementById("expires").value = toLocalInputValue(new Date(Date.now() + 86400000));
 loadList().catch(showError);
 </script>
-</body>
-</html>
+{% endblock script %}

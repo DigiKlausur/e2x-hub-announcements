@@ -2,6 +2,7 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 from fastapi.testclient import TestClient
+from jinja2 import Environment, StrictUndefined
 from jupyterhub_fastapi_adapter import User, require_authenticated_user
 
 from e2x_hub_announcements import service
@@ -108,3 +109,23 @@ def test_admin_ui_renders(client):
     assert 'href="/hub/static/css/style.min.css"' in html
     for page in ("spawn", "login", "home", "logout"):
         assert f'id="page-{page}"' in html
+    # The hub navbar from JupyterHub's page.html
+    assert 'href="/hub/home"' in html
+    assert 'href="/hub/admin"' in html
+    assert '<span class="me-1">admin</span>' in html
+
+
+def test_admin_ui_hides_admin_link_for_non_admins():
+    context = service.admin_ui_context(User(username="potato", admin=False))
+    html = service.jinja_env.get_template("index.j2").render(context)
+    assert 'href="/hub/home"' in html
+    assert 'href="/hub/admin"' not in html
+
+
+def test_admin_ui_provides_every_variable_hub_page_html_needs():
+    # Renders against the installed JupyterHub templates and fails on any missing
+    # variable, so a JupyterHub upgrade that needs a new one breaks this test, not the page.
+    strict = Environment(
+        loader=service.jinja_env.loader, autoescape=True, undefined=StrictUndefined
+    )
+    strict.get_template("index.j2").render(service.admin_ui_context(User(username="admin")))

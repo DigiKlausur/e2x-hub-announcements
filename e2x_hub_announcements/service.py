@@ -9,7 +9,7 @@ from typing import Annotated
 
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.responses import HTMLResponse
-from jinja2 import Environment, FileSystemLoader
+from jinja2 import ChoiceLoader, Environment, FileSystemLoader
 from jupyterhub.utils import url_path_join
 from jupyterhub_fastapi_adapter import (
     AuthenticationRequired,
@@ -23,6 +23,7 @@ from pydantic import BaseModel
 from . import store
 from .__about__ import __version__
 from ._data import SERVICE_TEMPLATE_PATH
+from .hub_page import STOCK_TEMPLATE_PATH, hub_page_context
 from .models import ALLOWED_TAGS, Announcement, AnnouncementCreate, Page, Severity
 from .render import render_banner
 from .settings import ServiceSettings
@@ -35,7 +36,13 @@ api_prefix = f"{service_prefix}/api"
 CurrentUser = Annotated[User, Depends(require_authenticated_user)]
 
 # ── Jinja2 environment for the admin UI ──────────────────────────────
-jinja_env = Environment(loader=FileSystemLoader(SERVICE_TEMPLATE_PATH), autoescape=True)
+# Our templates first, then JupyterHub's stock ones, so pages can extend "page.html".
+jinja_env = Environment(
+    loader=ChoiceLoader(
+        [FileSystemLoader(SERVICE_TEMPLATE_PATH), FileSystemLoader(STOCK_TEMPLATE_PATH)]
+    ),
+    autoescape=True,
+)
 
 # ── FastAPI application ──────────────────────────────────────────────
 app = FastAPI(
@@ -114,14 +121,18 @@ async def preview(data: AnnouncementCreate, user: CurrentUser) -> Preview:
 
 
 # ── Admin UI ─────────────────────────────────────────────────────────
+def admin_ui_context(user: User) -> dict:
+    """Template variables for index.j2: the hub's page variables plus our own."""
+    return hub_page_context(user, settings.hub_base_url) | {
+        "api_url": api_prefix,
+        "pages": list(Page),
+        "severities": list(Severity),
+        "allowed_tags": sorted(ALLOWED_TAGS),
+    }
+
+
 @app.get(f"{service_prefix}/", include_in_schema=False, response_class=HTMLResponse)
 async def admin_ui(user: CurrentUser) -> HTMLResponse:
     """The admin page: form, preview and list, talking to the API above."""
-    html = jinja_env.get_template("index.j2").render(
-        api_url=api_prefix,
-        hub_css_url=url_path_join(settings.hub_base_url, "hub/static/css/style.min.css"),
-        pages=list(Page),
-        severities=list(Severity),
-        allowed_tags=sorted(ALLOWED_TAGS),
-    )
+    html = jinja_env.get_template("index.j2").render(admin_ui_context(user))
     return HTMLResponse(content=html)
