@@ -39,7 +39,6 @@ Source = "https://github.com/Digiklausur/e2x-hub-announcements"
 [project.optional-dependencies]
 dev = [
   "pre-commit",
-  # Pinned to the same version as e2x-course-hub so all e2x packages format identically.
   "ruff==0.16.7",
   "tbump",
   "build",
@@ -48,8 +47,8 @@ dev = [
 test = [
   "pytest",
   "pytest-cov",
-  # Needed by FastAPI's TestClient.
-  "httpx",
+  "httpx",  
+  "traitlets",
 ]
 
 [tool.hatch.version]
