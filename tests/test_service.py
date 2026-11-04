@@ -6,7 +6,7 @@ from jinja2 import Environment, StrictUndefined
 from jupyterhub_fastapi_adapter import User, require_authenticated_user
 
 from e2x_hub_announcements import service
-from e2x_hub_announcements.models import AnnouncementCreate
+from e2x_hub_announcements.models import AnnouncementCreate, Page
 from e2x_hub_announcements.render import render_banner
 
 API = "/services/announcements/api"
@@ -113,6 +113,10 @@ def test_admin_ui_renders(client):
     assert 'href="/hub/home"' in html
     assert 'href="/hub/admin"' in html
     assert '<span class="me-1">admin</span>' in html
+
+
+def test_every_page_has_a_description():
+    assert set(service.PAGE_DESCRIPTIONS) == set(Page)
 
 
 def test_admin_ui_hides_admin_link_for_non_admins():

@@ -21,10 +21,12 @@
     <fieldset class="mb-3">
       <legend class="form-label fs-6">Show on</legend>
       {% for page in pages %}
-      <div class="form-check form-check-inline">
+      <div class="form-check mb-1">
         <input class="form-check-input" type="checkbox" name="pages" value="{{ page }}"
-               id="page-{{ page }}" {% if page == "spawn" %}checked{% endif %}>
-        <label class="form-check-label" for="page-{{ page }}">{{ page }}</label>
+               id="page-{{ page }}" aria-describedby="page-{{ page }}-help"
+               {% if page == "spawn" %}checked{% endif %}>
+        <label class="form-check-label" for="page-{{ page }}">{{ page | capitalize }}</label>
+        <div id="page-{{ page }}-help" class="form-text mt-0">{{ page_descriptions[page] }}</div>
       </div>
       {% endfor %}
     </fieldset>

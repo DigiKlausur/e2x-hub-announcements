@@ -121,11 +121,21 @@ async def preview(data: AnnouncementCreate, user: CurrentUser) -> Preview:
 
 
 # ── Admin UI ─────────────────────────────────────────────────────────
+# Shown next to each page checkbox, so admins know where a banner will appear.
+PAGE_DESCRIPTIONS = {
+    Page.spawn: "Where users choose and start their server.",
+    Page.home: "The hub's home page, where users start, stop or open their server.",
+    Page.login: "The login page. Visible to everyone, even before logging in.",
+    Page.logout: "The page shown right after logging out.",
+}
+
+
 def admin_ui_context(user: User) -> dict:
     """Template variables for index.j2: the hub's page variables plus our own."""
     return hub_page_context(user, settings.hub_base_url) | {
         "api_url": api_prefix,
         "pages": list(Page),
+        "page_descriptions": PAGE_DESCRIPTIONS,
         "severities": list(Severity),
         "allowed_tags": sorted(ALLOWED_TAGS),
     }
